@@ -34,6 +34,8 @@ runs:
 
     - name: Initialize ohpm
       shell: bash
+      env:
+        GITHUB_ACTION_PATH: ${{ github.action_path }}
       run: |
         echo "Using packaged ohpm from action repository"
         ACTION_PATH="$GITHUB_ACTION_PATH"
