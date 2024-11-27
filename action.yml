@@ -1,6 +1,12 @@
 name: 'OpenHarmony Build Action'
 description: 'GitHub Action for building OpenHarmony v4.1/SDK v11 applications'
 
+inputs:
+  working-directory:
+    description: 'Working directory relative to repository root'
+    required: false
+    default: '.'
+
 runs:
   using: 'composite'
   steps:
@@ -14,19 +20,16 @@ runs:
         GITHUB_JOB_CONTEXT: ${{ toJson(github.job) }}
       shell: bash
       run: echo "$GITHUB_JOB_CONTEXT"
+
     - name: Dump job context
       env:
         JOB_CONTEXT: ${{ toJson(job) }}
       shell: bash
       run: echo "$JOB_CONTEXT"
-    - name: Dump jobs context
-      env:
-        JOBS_CONTEXT: ${{ toJson(jobs) }}
-      shell: bash
-      run: echo "$JOBS_CONTEXT"
 
     - name: Diagnostic Logging
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       run: |
         echo "=== Environment Information ==="
         echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
@@ -53,8 +56,8 @@ runs:
         tree -L 2 $GITHUB_WORKSPACE || ls -R $GITHUB_WORKSPACE
 
     - name: Verify hvigorw File Presence
-      working-directory: ${{ github.workspace }}
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       run: |
         if [ ! -f "./hvigorw" ]; then
           echo "Error: hvigorw not found in the root of the project."
@@ -114,12 +117,12 @@ runs:
 
     - name: Install Dependencies
       shell: bash
-      working-directory: ${{ github.workspace }}
+      working-directory: ${{ inputs.working-directory }}
       run: ohpm install --all
 
     - name: Initialize and Build
       shell: bash
-      working-directory: ${{ github.workspace }}
+      working-directory: ${{ inputs.working-directory }}
       run: |
         bash ./hvigorw --version --accept-license
         bash ./hvigorw clean --no-parallel --no-daemon
