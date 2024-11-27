@@ -42,7 +42,7 @@ runs:
         mkdir -p $HOME/ohpm
         
         # Extract with proper path handling
-        if ! unzip -o $ACTION_PATH/ohpm-1.4.zip -d $HOME; then
+        if ! unzip -o $ACTION_PATH/resource/ohpm/ohpm-1.4.zip -d $HOME/ohpm; then
           echo "Error: Failed to extract ohpm-1.4.zip from action"
           exit 1
         fi
@@ -55,13 +55,15 @@ runs:
           exit 1
         fi
         
-        # Add to PATH
+        # Add ohpm to PATH to make it available
         OHPM_PATH="$HOME/ohpm/bin"
         echo "$OHPM_PATH" >> $GITHUB_PATH
         export PATH="$OHPM_PATH:$PATH"
         
         # Verify installation
+        echo "ohpm installed successfully in: "
         which ohpm
+        echo "ohpm version: "
         ohpm -v
 
     - name: Install Dependencies
