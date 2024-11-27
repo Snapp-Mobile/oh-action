@@ -1,0 +1,76 @@
+name: 'OpenHarmony Build Action'
+description: 'GitHub Action for building OpenHarmony v4.1/SDK v11 applications'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.20.1'
+
+    - name: Verify hvigorw File Presence
+      shell: bash
+      run: |
+        if [ ! -f "./hvigorw" ]; then
+          echo "Error: hvigorw not found in the root of the project."
+          exit 1
+        fi
+
+    - name: Setup .npmrc File
+      shell: bash
+      run: |
+        if [ ! -f "$HOME/.npmrc" ]; then
+          touch $HOME/.npmrc
+          echo "@ohos:registry=https://repo.harmonyos.com/npm/" >> $HOME/.npmrc
+        fi
+
+    - name: Setup OpenHarmony SDK
+      uses: openharmony-rs/setup-ohos-sdk@v0.1
+      with:
+        version: '4.1'
+        cache: true
+        fixup-path: true
+
+    - name: Initialize ohpm
+      shell: bash
+      run: |
+        echo "Using packaged ohpm from action repository"
+        ACTION_PATH="$GITHUB_ACTION_PATH"
+        
+        # Create directories
+        mkdir -p $HOME/ohpm
+        
+        # Extract with proper path handling
+        if ! unzip -o $ACTION_PATH/ohpm-1.4.zip -d $HOME; then
+          echo "Error: Failed to extract ohpm-1.4.zip from action"
+          exit 1
+        fi
+        
+        # Verify ohpm binary exists
+        if [ ! -f "$HOME/ohpm/bin/ohpm" ]; then
+          echo "Error: ohpm binary not found at expected location"
+          echo "Contents of $HOME/ohpm:"
+          ls -la $HOME/ohpm
+          exit 1
+        fi
+        
+        # Add to PATH
+        OHPM_PATH="$HOME/ohpm/bin"
+        echo "$OHPM_PATH" >> $GITHUB_PATH
+        export PATH="$OHPM_PATH:$PATH"
+        
+        # Verify installation
+        which ohpm
+        ohpm -v
+
+    - name: Install Dependencies
+      shell: bash
+      run: ohpm install --all
+
+    - name: Initialize and Build
+      shell: bash
+      run: |
+        bash ./hvigorw --version --accept-license
+        bash ./hvigorw clean --no-parallel --no-daemon
+        bash ./hvigorw assembleHap --mode module -p product=default --stacktrace --no-parallel --no-daemon
