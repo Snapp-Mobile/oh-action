@@ -9,7 +9,51 @@ runs:
       with:
         node-version: '18.20.1'
 
+    - name: Dump github.job context
+      env:
+        GITHUB_JOB_CONTEXT: ${{ toJson(github.job) }}
+      shell: bash
+      run: echo "$GITHUB_JOB_CONTEXT"
+    - name: Dump job context
+      env:
+        JOB_CONTEXT: ${{ toJson(job) }}
+      shell: bash
+      run: echo "$JOB_CONTEXT"
+    - name: Dump jobs context
+      env:
+        JOBS_CONTEXT: ${{ toJson(jobs) }}
+      shell: bash
+      run: echo "$JOBS_CONTEXT"
+
+    - name: Diagnostic Logging
+      shell: bash
+      run: |
+        echo "=== Environment Information ==="
+        echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+        echo "GITHUB_ACTION_PATH: $GITHUB_ACTION_PATH"
+        echo "Current Directory: $(pwd)"
+        echo "Job Default Working Directory: ${{ github.job.defaults.run.working-directory }}"
+        
+        echo -e "\n=== Current Directory Contents ==="
+        ls -la
+        
+        echo -e "\n=== Workspace Contents ==="
+        ls -la $GITHUB_WORKSPACE
+        
+        echo -e "\n=== Action Directory Contents ==="
+        ls -la $GITHUB_ACTION_PATH
+        
+        echo -e "\n=== Environment Variables ==="
+        env | sort
+        
+        echo -e "\n=== System Information ==="
+        uname -a
+        
+        echo -e "\n=== Directory Tree (up to 2 levels) ==="
+        tree -L 2 $GITHUB_WORKSPACE || ls -R $GITHUB_WORKSPACE
+
     - name: Verify hvigorw File Presence
+      working-directory: ${{ github.workspace }}
       shell: bash
       run: |
         if [ ! -f "./hvigorw" ]; then
@@ -70,10 +114,12 @@ runs:
 
     - name: Install Dependencies
       shell: bash
+      working-directory: ${{ github.workspace }}
       run: ohpm install --all
 
     - name: Initialize and Build
       shell: bash
+      working-directory: ${{ github.workspace }}
       run: |
         bash ./hvigorw --version --accept-license
         bash ./hvigorw clean --no-parallel --no-daemon
