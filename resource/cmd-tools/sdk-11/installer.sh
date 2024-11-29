@@ -1,34 +1,90 @@
 #!/usr/bin/env bash
 
-echo "Setting up OpenHarmony command-line tools for SDK 11"
+# Enable strict error handling
+set -e # Exit on error
 
-# Create ohpm directory
-mkdir -p $CMD_PATH/ohpm
+# Start main log group for better visualization in GitHub Actions
+echo "::group::Setting up OpenHarmony command-line tools for SDK 11"
 
-# Get the directory of the current script
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Validate required environment variables
+# CMD_PATH: Directory where tools will be installed
+# GITHUB_PATH: GitHub Actions path file for persistent PATH modifications
+for var in CMD_PATH GITHUB_PATH GITHUB_ACTION_PATH; do
+    if [ -z "${!var}" ]; then
+        echo "::error::Required environment variable $var is not set"
+        exit 1
+    fi
+done
 
-# Extract ohpm
-if ! unzip -o $SCRIPT_DIR/ohpm/ohpm.zip -d $CMD_PATH/ohpm; then
-  echo "Error: Failed to extract ohpm.zip"
-  exit 1
-fi
+# Get absolute path of the script's directory for reliable file operations
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Copy the entire bin directory
-if ! cp -r $SCRIPT_DIR/bin $CMD_PATH/; then
-  echo "Error: Failed to copy bin directory"
-  exit 1
-fi
+# Output debug information for troubleshooting
+echo "::debug::Script directory: $SCRIPT_DIR"
+echo "::debug::CMD_PATH: $CMD_PATH"
 
-# Make all files in bin executable
-chmod +x $CMD_PATH/bin/*
+# Install and configure OHPM (OpenHarmony Package Manager)
+setup_ohpm() {
+    echo "::group::Setting up OHPM..."
+    # Create installation directory
+    mkdir -p "$CMD_PATH/ohpm"
 
-# Add to PATH
-echo "$CMD_PATH/bin" >> $GITHUB_PATH
-export PATH="$CMD_PATH/bin:$PATH"
+    # Extract OHPM package to installation directory
+    if ! unzip -o "$SCRIPT_DIR/ohpm/ohpm.zip" -d "$CMD_PATH/ohpm"; then
+        echo "::error::Failed to extract ohpm.zip"
+        return 1
+    fi
+    echo "::endgroup::"
+}
 
-# Verify installation
-echo "ohpm installed successfully in: "
-which ohpm
-echo "ohpm version: "
-ohpm -v
+# Setup executable files in bin directory
+setup_executables() {
+    echo "::group::Setting up executables..."
+    # Copy bin directory to installation path
+    if ! cp -r "$SCRIPT_DIR/bin" "$CMD_PATH/"; then
+        echo "::error::Failed to copy bin directory"
+        return 1
+    fi
+
+    # Make all files in bin directory executable
+    if ! chmod +x "$CMD_PATH/bin/"*; then
+        echo "::error::Failed to set executable permissions"
+        return 1
+    fi
+    echo "::endgroup::"
+}
+
+# Configure environment variables and verify installation
+setup_environment() {
+    echo "::group::Setting up environment..."
+
+    # Add installation path to GitHub Actions PATH
+    echo "$CMD_PATH/bin" >>"$GITHUB_PATH"
+    # Add to current session PATH
+    export PATH="$CMD_PATH/bin:$PATH"
+
+    # Verify OHPM is accessible
+    if ! command -v ohpm &>/dev/null; then
+        echo "::error::ohpm not found in PATH"
+        return 1
+    fi
+
+    # Display installation information
+    echo "ohpm location: $(which ohpm)"
+    ohpm -v
+    echo "::endgroup::"
+}
+
+# Main installation sequence
+main() {
+    setup_ohpm || exit 1
+    setup_executables || exit 1
+    setup_environment || exit 1
+    echo "::notice::OpenHarmony tools installation completed successfully"
+}
+
+# Execute installation
+main
+
+# Close the main log group
+echo "::endgroup::"
