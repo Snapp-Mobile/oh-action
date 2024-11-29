@@ -46,10 +46,10 @@ runs:
 
     - name: Setup command-line-tools
       shell: bash
-      run: resource/cmd-tools/sdk-11/installer.sh
+      run: ${{ github.action_path }}/resource/cmd-tools/sdk-11/installer.sh
       env:
         GITHUB_ACTION_PATH: ${{ github.action_path }}
-        CMD_PATH: $HOME/command-line-tools
+        CMD_PATH: ${{ env.CMD_PATH }}
         PROJECT_PATH: ${{ inputs.working-directory }}
 
     - name: Install Dependencies
