@@ -1,0 +1,66 @@
+name: Test oh-action with sdk-11
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: macos-latest
+    env:
+      EXAMPLE_PROJECT_PATH: example/open-harmony/sdk-11/Sample
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install tree command
+        run: brew install tree
+
+      - name: Test oh-action
+        uses: ./
+        with:
+          working-directory: ${{ env.EXAMPLE_PROJECT_PATH }}
+
+      - name: Verify Installation
+        run: |
+          echo "=== Environment Variables ==="
+          echo "PATH: $PATH"
+          echo "OHOS_BASE_SDK_HOME: $OHOS_BASE_SDK_HOME"
+          echo "CMD_PATH: $CMD_PATH"
+
+          echo "=== OHPM Installation ==="
+          which ohpm
+          ohpm -v
+
+          echo "=== Hvigor Installation ==="
+          which hvigorw
+          hvigorw --version
+
+          echo "=== Installation Directories ==="
+          echo "Command-line Tools:"
+          tree -L 3 $CMD_PATH
+
+          echo "OpenHarmony SDK:"
+          tree -L 3 $OHOS_BASE_SDK_HOME
+
+          echo "=== Node.js Version ==="
+          node --version
+          npm --version
+
+          echo "=== NPM Configuration ==="
+          cat $HOME/.npmrc
+
+      - name: Install OpenHarmony Dependencies
+        working-directory: ${{ env.EXAMPLE_PROJECT_PATH }}
+        run: ohpm install --all
+
+      - name: Initialize and Build
+        working-directory: ${{ env.EXAMPLE_PROJECT_PATH }}
+        run: |
+          hvigorw --version --accept-license
+          hvigorw clean --no-parallel --no-daemon
+          hvigorw assembleHap --mode module -p product=default --stacktrace --no-parallel --no-daemon

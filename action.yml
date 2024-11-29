@@ -1,66 +1,52 @@
-name: 'OpenHarmony Build Action'
-description: 'GitHub Action for building OpenHarmony v4.1/SDK v11 applications'
+name: "OpenHarmony Build Action"
+description: "GitHub Action for building OpenHarmony v4.1/SDK v11 applications"
 
 inputs:
   working-directory:
-    description: 'Working directory relative to repository root'
+    description: "Working directory relative to repository root"
     required: false
-    default: '.'
+    default: "."
+  install-dependencies:
+    description: "Install dependencies using ohpm install --all"
+    required: false
+    default: "true"
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
+    - name: Validate Inputs
+      shell: bash
+      run: |
+        if [ ! -d "${{ inputs.working-directory }}" ]; then
+          echo "::error::Working directory does not exist: ${{ inputs.working-directory }}"
+          exit 1
+        fi
+
+    - name: Validate Runner OS
+      shell: bash
+      run: |
+        if [ "$(uname)" != "Darwin" ]; then
+          echo "::error::This action only supports macOS runners. Please use runs-on: macos-latest in your workflow."
+          exit 1
+        fi
+
+    - name: Set up environment variables
+      shell: bash
+      run: |
+        echo "CMD_PATH=$HOME/command-line-tools" >> $GITHUB_ENV
+        echo "PROJECT_PATH=$(pwd)/${{ inputs.working-directory }}" >> $GITHUB_ENV
+
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18.20.1'
+        node-version: "18.20.1"
 
-    - name: Dump github.job context
-      env:
-        GITHUB_JOB_CONTEXT: ${{ toJson(github.job) }}
-      shell: bash
-      run: echo "$GITHUB_JOB_CONTEXT"
-
-    - name: Dump job context
-      env:
-        JOB_CONTEXT: ${{ toJson(job) }}
-      shell: bash
-      run: echo "$JOB_CONTEXT"
-
-    - name: Diagnostic Logging
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: |
-        echo "=== Environment Information ==="
-        echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-        echo "GITHUB_ACTION_PATH: $GITHUB_ACTION_PATH"
-        echo "Current Directory: $(pwd)"
-        echo "Job Default Working Directory: ${{ github.job.defaults.run.working-directory }}"
-        
-        echo -e "\n=== Current Directory Contents ==="
-        ls -la
-        
-        echo -e "\n=== Workspace Contents ==="
-        ls -la $GITHUB_WORKSPACE
-        
-        echo -e "\n=== Action Directory Contents ==="
-        ls -la $GITHUB_ACTION_PATH
-        
-        echo -e "\n=== Environment Variables ==="
-        env | sort
-        
-        echo -e "\n=== System Information ==="
-        uname -a
-        
-        echo -e "\n=== Directory Tree (up to 2 levels) ==="
-        tree -L 2 $GITHUB_WORKSPACE || ls -R $GITHUB_WORKSPACE
-
-    - name: Verify hvigorw File Presence
+    - name: Verify Project Structure
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
         if [ ! -f "./hvigorw" ]; then
-          echo "Error: hvigorw not found in the root of the project."
+          echo "::error::hvigorw not found in the root of the project."
           exit 1
         fi
 
@@ -75,55 +61,23 @@ runs:
     - name: Setup OpenHarmony SDK
       uses: openharmony-rs/setup-ohos-sdk@v0.1
       with:
-        version: '4.1'
+        version: "4.1"
         cache: true
         fixup-path: true
 
-    - name: Initialize ohpm
+    - name: Setup command-line-tools
       shell: bash
+      run: resource/cmd-tools/sdk-11/installer.sh
       env:
         GITHUB_ACTION_PATH: ${{ github.action_path }}
-      run: |
-        echo "Using packaged ohpm from action repository"
-        ACTION_PATH="$GITHUB_ACTION_PATH"
-        
-        # Create directories
-        mkdir -p $HOME/ohpm
-        
-        # Extract with proper path handling
-        if ! unzip -o $ACTION_PATH/resource/ohpm/ohpm-1.4.zip -d $HOME/ohpm; then
-          echo "Error: Failed to extract ohpm-1.4.zip from action"
-          exit 1
-        fi
-        
-        # Verify ohpm binary exists
-        if [ ! -f "$HOME/ohpm/bin/ohpm" ]; then
-          echo "Error: ohpm binary not found at expected location"
-          echo "Contents of $HOME/ohpm:"
-          ls -la $HOME/ohpm
-          exit 1
-        fi
-        
-        # Add ohpm to PATH to make it available
-        OHPM_PATH="$HOME/ohpm/bin"
-        echo "$OHPM_PATH" >> $GITHUB_PATH
-        export PATH="$OHPM_PATH:$PATH"
-        
-        # Verify installation
-        echo "ohpm installed successfully in: "
-        which ohpm
-        echo "ohpm version: "
-        ohpm -v
+        CMD_PATH: ${{ env.CMD_PATH }}
+        PROJECT_PATH: ${{ env.PROJECT_PATH }}
 
     - name: Install Dependencies
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: ohpm install --all
-
-    - name: Initialize and Build
+      if: ${{ inputs.install-dependencies == 'true' }}
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        bash ./hvigorw --version --accept-license
-        bash ./hvigorw clean --no-parallel --no-daemon
-        bash ./hvigorw assembleHap --mode module -p product=default --stacktrace --no-parallel --no-daemon
+        echo "::group::Installing dependencies"
+        ohpm install --all
+        echo "::endgroup::"
