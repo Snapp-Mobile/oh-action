@@ -6,10 +6,22 @@ inputs:
     description: "Working directory relative to repository root"
     required: false
     default: "."
+  install-dependencies:
+    description: "Install dependencies using ohpm install --all"
+    required: false
+    default: "true"
 
 runs:
   using: "composite"
   steps:
+    - name: Validate Inputs
+      shell: bash
+      run: |
+        if [ ! -d "${{ inputs.working-directory }}" ]; then
+          echo "::error::Working directory does not exist: ${{ inputs.working-directory }}"
+          exit 1
+        fi
+
     - name: Validate Runner OS
       shell: bash
       run: |
@@ -28,14 +40,13 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: "18.20.1"
-        cache: "npm"
 
-    - name: Verify hvigorw File Presence
+    - name: Verify Project Structure
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
         if [ ! -f "./hvigorw" ]; then
-          echo "Error: hvigorw not found in the root of the project."
+          echo "::error::hvigorw not found in the root of the project."
           exit 1
         fi
 
@@ -56,21 +67,17 @@ runs:
 
     - name: Setup command-line-tools
       shell: bash
-      run: ${{ github.action_path }}/resource/cmd-tools/sdk-11/installer.sh
+      run: resource/cmd-tools/sdk-11/installer.sh
       env:
         GITHUB_ACTION_PATH: ${{ github.action_path }}
         CMD_PATH: ${{ env.CMD_PATH }}
         PROJECT_PATH: ${{ env.PROJECT_PATH }}
 
     - name: Install Dependencies
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: ohpm install --all
-
-    - name: Initialize and Build
+      if: ${{ inputs.install-dependencies == 'true' }}
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        bash ./hvigorw --version --accept-license
-        bash ./hvigorw clean --no-parallel --no-daemon
-        bash ./hvigorw assembleHap --mode module -p product=default --stacktrace --no-parallel --no-daemon
+        echo "::group::Installing dependencies"
+        ohpm install --all
+        echo "::endgroup::"
