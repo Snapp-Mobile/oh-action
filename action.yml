@@ -10,6 +10,14 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Validate Runner OS
+      shell: bash
+      run: |
+        if [ "$(uname)" != "Darwin" ]; then
+          echo "::error::This action only supports macOS runners. Please use runs-on: macos-latest in your workflow."
+          exit 1
+        fi
+
     - name: Set up environment variables
       shell: bash
       run: |
