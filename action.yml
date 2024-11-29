@@ -14,11 +14,13 @@ runs:
       shell: bash
       run: |
         echo "CMD_PATH=$HOME/command-line-tools" >> $GITHUB_ENV
+        echo "PROJECT_PATH=$(pwd)/${{ inputs.working-directory }}" >> $GITHUB_ENV
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
         node-version: "18.20.1"
+        cache: "npm"
 
     - name: Verify hvigorw File Presence
       shell: bash
@@ -50,7 +52,7 @@ runs:
       env:
         GITHUB_ACTION_PATH: ${{ github.action_path }}
         CMD_PATH: ${{ env.CMD_PATH }}
-        PROJECT_PATH: ${{ inputs.working-directory }}
+        PROJECT_PATH: ${{ env.PROJECT_PATH }}
 
     - name: Install Dependencies
       shell: bash

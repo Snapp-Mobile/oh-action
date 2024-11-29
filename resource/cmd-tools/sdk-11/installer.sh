@@ -37,6 +37,46 @@ setup_ohpm() {
     echo "::endgroup::"
 }
 
+setup_hvigorw() {
+    echo "::group::Setting up hvigorw..."
+    
+    # Validate PROJECT_PATH is set
+    if [ -z "$PROJECT_PATH" ]; then
+        echo "::error::PROJECT_PATH environment variable is not set"
+        return 1
+    fi
+
+    # Check if hvigorw exists in the project
+    if [ ! -f "$PROJECT_PATH/hvigorw" ]; then
+        echo "::error::hvigorw file not found at: $PROJECT_PATH/hvigorw"
+        return 1
+    fi
+
+    # Ensure bin directory exists
+    mkdir -p "$CMD_PATH/bin"
+
+    # Create the hvigorw script with the resolved PROJECT_PATH
+    cat > "$CMD_PATH/bin/hvigorw" << EOF
+#!/usr/bin/env bash
+
+set -e
+HVIGORW_PATH="$PROJECT_PATH/hvigorw"
+
+# Forward all arguments to the project's hvigorw
+exec bash "\$HVIGORW_PATH" "\$@"
+EOF
+
+    # Verify the script was created
+    if [ ! -f "$CMD_PATH/bin/hvigorw" ]; then
+        echo "::error::Failed to create hvigorw script"
+        return 1
+    fi
+
+    echo "::debug::hvigorw script created at: $CMD_PATH/bin/hvigorw"
+    echo "::debug::Points to project hvigorw at: $PROJECT_PATH/hvigorw"
+    echo "::endgroup::"
+}
+
 # Setup executable files in bin directory
 setup_executables() {
     echo "::group::Setting up executables..."
@@ -78,6 +118,7 @@ setup_environment() {
 # Main installation sequence
 main() {
     setup_ohpm || exit 1
+    setup_hvigorw || exit 1
     setup_executables || exit 1
     setup_environment || exit 1
     echo "::notice::OpenHarmony tools installation completed successfully"
