@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+defaults:
+  run:
+    working-directory: example/open-harmony/sdk-11/Sample
+
 jobs:
   test:
     runs-on: macos-latest
@@ -55,11 +59,9 @@ jobs:
           cat $HOME/.npmrc
 
       - name: Install OpenHarmony Dependencies
-        working-directory: ${{ env.EXAMPLE_PROJECT_PATH }}
         run: ohpm install --all
 
       - name: Initialize and Build
-        working-directory: ${{ env.EXAMPLE_PROJECT_PATH }}
         run: |
           hvigorw --version --accept-license
           hvigorw clean --no-parallel --no-daemon
