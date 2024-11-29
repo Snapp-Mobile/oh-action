@@ -62,8 +62,16 @@ setup_hvigorw() {
 set -e
 HVIGORW_PATH="$PROJECT_PATH/hvigorw"
 
-# Forward all arguments to the project's hvigorw
-exec bash "\$HVIGORW_PATH" "\$@"
+# Preserve current directory
+ORIGINAL_DIR="\$(pwd)"
+
+# Change to the project directory, execute hvigorw, then return
+(cd "$PROJECT_PATH" && exec bash "\$HVIGORW_PATH" "\$@")
+RC=\$?
+
+# Return to original directory (though not strictly necessary due to subshell)
+cd "\$ORIGINAL_DIR"
+exit \$RC
 EOF
 
     # Verify the script was created
