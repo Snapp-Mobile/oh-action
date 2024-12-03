@@ -24,11 +24,24 @@ jobs:
       - name: Install tree command
         run: brew install tree
 
-      - name: Extract signing environment
+      - name: Setup OpenHarmony signing certificates and keystore
+        # This step extracts the required signing materials from a base64 encoded zip stored in GitHub Secrets
+        # The zip contains:
+        # - .cer file: Developer certificate for signing
+        # - .p7b file: Profile for app provisioning
+        # - .p12 file: Keystore containing private key
         run: |
+          # Decode base64 secret to zip file
           echo "${{ secrets.OH_SECRETS_ZIP }}" | base64 -d > secrets.zip
+          
+          # Extract files while preserving directory structure
           unzip -o secrets.zip
+          
+          # Cleanup temporary zip file
           rm secrets.zip
+          
+          # Display extracted files for verification
+          echo "=== Extracted Signing Materials ==="
           tree .secret -L 4
 
       - name: Test oh-action
