@@ -107,6 +107,57 @@ jobs:
           hvigorw assembleHap --mode module -p product=default --stacktrace --no-parallel --no-daemon
 ```
 
+### Handling OpenHarmony Signing Materials Securely
+
+When building OpenHarmony applications, you need various signing materials (certificates, profiles, and keystores) to package your application. Here's how to handle these sensitive files securely in your CI/CD pipeline:
+
+#### 1. Organize Signing Materials
+
+You can learn about how to create your own secret files from this link: [Creating Certificate and Key Files](https://developer.huawei.com/consumer/en/doc/harmonyos-guides/ide-signing-V13#section297715173233)
+
+We decided to put our keys and other important files in the `.secret` folder in the root of our project. Also, don't forget to update your project structure to use these keys and files.
+
+
+![Secret Folder Structure](resource/img/secret-folder.png)
+
+The `.secret` folder typically contains:
+- `.cer` file: Developer certificate for signing
+- `.p7b` file: Profile for app provisioning
+- `.p12` file: Keystore containing private key
+
+
+#### 2. Create Protected Archive
+To create a secure, base64-encoded archive of your signing materials, follow these steps:
+
+1. Navigate to the directory containing your `.secret` folder.
+2. Run the following command to create a zip archive of the `.secret` folder:
+   ```sh
+   zip -r secrets.zip .secret
+   ```
+3. Encode the zip file to base64 and display it in the terminal:
+   ```sh
+   base64 secrets.zip
+   ```
+4. Copy the base64 string displayed in your terminal to your clipboard.
+
+#### 3. Store in GitHub Secrets
+1. Go to your repository's Settings > Secrets and variables > Actions
+2. Create a new secret named `OH_SECRETS_ZIP`
+3. Paste the `base64` string from your clipboard
+
+#### 4. Use in Workflow
+Add the following step to your workflow to securely extract signing materials:
+``` yaml
+- name: Setup OpenHarmony signing certificates and keystore
+  run: |
+    # Decode and extract signing materials
+    echo "${{ secrets.OH_SECRETS_ZIP }}" | base64 -d > secrets.zip
+    unzip -o secrets.zip
+    rm secrets.zip
+```
+
+**Important Note:** Remember to add .secret/ to your .gitignore file to prevent accidentally committing sensitive files.
+
 ## Support
 
 If you encounter any issues:
