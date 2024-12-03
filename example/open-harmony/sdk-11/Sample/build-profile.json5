@@ -1,6 +1,19 @@
 {
   "app": {
-    "signingConfigs": [],
+    "signingConfigs": [
+      {
+        "name": "default",
+        "material": {
+          "storePassword": "0000001B32139C7B0CF88ECEF8BC17A20CF3B0248EDACC9A35A5B010EF2CEA1BCF2D0B6B787F722CD21C5B",
+          "certpath": "./.secret/default_Sample_ZlVeQZos8mspxZbFbZnVyf732f_twgPKWq0w0_cPEao=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B31FBD903B2DF5212AB9C89C0E95A058866575E064356D02A8DA9FE1DE702A4A80D34F0EBC5512E",
+          "profile": "./.secret/default_Sample_ZlVeQZos8mspxZbFbZnVyf732f_twgPKWq0w0_cPEao=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "./.secret/default_Sample_ZlVeQZos8mspxZbFbZnVyf732f_twgPKWq0w0_cPEao=.p12"
+        }
+      }
+    ],
     "products": [
       {
         "name": "default",
