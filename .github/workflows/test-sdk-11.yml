@@ -24,6 +24,13 @@ jobs:
       - name: Install tree command
         run: brew install tree
 
+      - name: Extract signing environment
+        run: |
+          echo "${{ secrets.OH_SECRETS_ZIP }}" | base64 -d > secrets.zip
+          unzip -o secrets.zip
+          rm secrets.zip
+          tree .secret -L 4
+
       - name: Test oh-action
         uses: ./
         with:
