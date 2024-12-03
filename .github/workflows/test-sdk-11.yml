@@ -29,7 +29,7 @@ jobs:
           echo "${{ secrets.OH_SECRETS_ZIP }}" | base64 -d > secrets.zip
           unzip -o secrets.zip
           rm secrets.zip
-          tree .secrets -L 4
+          tree .secret -L 4
 
       - name: Test oh-action
         uses: ./
